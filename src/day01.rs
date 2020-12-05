@@ -32,7 +32,7 @@ fn part2(entries: &[usize]) {
 }
 
 pub fn run() {
-    let file = File::open("input/day01_input.txt").unwrap();
+    let file = File::open("input/day01.txt").unwrap();
     let buf = BufReader::new(file);
     let entries: Vec<_> = buf
         .lines()
