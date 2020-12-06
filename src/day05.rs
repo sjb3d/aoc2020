@@ -18,4 +18,15 @@ pub fn run() {
         })
         .collect();
     println!("day05: highest id is {}", ids.iter().max().unwrap());
+
+    let mut bits = vec![false; 1024];
+    for id in ids.iter() {
+        bits[*id] = true;
+    }
+    let bits = bits;
+    for id in 8..1016 {
+        if !bits[id] && bits[id - 1] && bits[id + 1] {
+            println!("day05: seat id is {}", id);
+        }
+    }
 }
