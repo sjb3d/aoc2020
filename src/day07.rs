@@ -47,13 +47,25 @@ fn bag(i: &str) -> IResult<&str, Bag> {
     Ok((i, Bag { name, contents }))
 }
 
+fn count_bags(name: BagName, bags: &[Bag]) -> usize {
+    let bag = bags.iter().find(|b| b.name == name).unwrap();
+    1 + bag
+        .contents
+        .iter()
+        .map(|c| c.0 * count_bags(c.1, bags))
+        .sum::<usize>()
+}
+
 pub fn run() {
     let text = read_to_string("input/day07.txt").unwrap();
-    let bags =
-        all_consuming(terminated(separated_list1(multispace0, bag), multispace0))(&text).unwrap().1;
+    let bags = all_consuming(terminated(separated_list1(multispace0, bag), multispace0))(&text)
+        .unwrap()
+        .1;
+
+    let root_name = BagName("shiny", "gold");
 
     let mut active = HashSet::new();
-    active.insert(BagName("shiny", "gold"));
+    active.insert(root_name);
     loop {
         let mut changed = false;
         for bag in bags.iter() {
@@ -68,4 +80,9 @@ pub fn run() {
         }
     }
     println!("day07: shiny gold containers {}", active.len() - 1);
+
+    println!(
+        "day07: contained bag count is {}",
+        count_bags(root_name, &bags) - 1
+    );
 }
