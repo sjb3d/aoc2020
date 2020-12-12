@@ -58,15 +58,35 @@ struct Coord {
 impl Coord {
     fn move_by(&mut self, heading: Heading, amount: u32) {
         match heading {
-            Heading::North => self.y -= amount as i32,
+            Heading::North => self.y += amount as i32,
             Heading::East => self.x += amount as i32,
-            Heading::South => self.y += amount as i32,
+            Heading::South => self.y -= amount as i32,
             Heading::West => self.x -= amount as i32,
         }
     }
 
     fn manhattan_distance(&self) -> i32 {
         self.x.abs() + self.y.abs()
+    }
+
+    fn rotate_by(&mut self, turn: Turn, mut amount: u32) {
+        while amount > 0 {
+            match turn {
+                Turn::Left => {
+                    *self = Coord {
+                        x: -self.y,
+                        y: self.x,
+                    }
+                }
+                Turn::Right => {
+                    *self = Coord {
+                        x: self.y,
+                        y: -self.x,
+                    }
+                }
+            };
+            amount -= 90;
+        }
     }
 }
 
@@ -88,18 +108,38 @@ pub fn run() {
             }
         })
         .collect();
-
-    let mut coord = Coord { x: 0, y: 0 };
-    let mut heading = Heading::East;
-    for action in actions.iter() {
-        match action {
-            Action::Move(heading, amount) => coord.move_by(*heading, *amount),
-            Action::Turn(turn, amount) => heading.turn_by(*turn, *amount),
-            Action::Forward(amount) => coord.move_by(heading, *amount),
+    {
+        let mut coord = Coord { x: 0, y: 0 };
+        let mut heading = Heading::East;
+        for action in actions.iter() {
+            match *action {
+                Action::Move(heading, amount) => coord.move_by(heading, amount),
+                Action::Turn(turn, amount) => heading.turn_by(turn, amount),
+                Action::Forward(amount) => coord.move_by(heading, amount),
+            }
         }
+        println!(
+            "day12: manhattan distance is {}",
+            coord.manhattan_distance()
+        );
     }
-    println!(
-        "day12: manhattan distance is {}",
-        coord.manhattan_distance()
-    );
+
+    {
+        let mut waypoint_coord = Coord { x: 10, y: 1 };
+        let mut ship_coord = Coord { x: 0, y: 0 };
+        for action in actions.iter() {
+            match *action {
+                Action::Move(heading, amount) => waypoint_coord.move_by(heading, amount),
+                Action::Turn(turn, amount) => waypoint_coord.rotate_by(turn, amount),
+                Action::Forward(amount) => {
+                    ship_coord.x += (amount as i32) * waypoint_coord.x;
+                    ship_coord.y += (amount as i32) * waypoint_coord.y;
+                }
+            }
+        }
+        println!(
+            "day12: alt manhattan distance is {}",
+            ship_coord.manhattan_distance()
+        );
+    }
 }
