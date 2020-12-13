@@ -7,3 +7,4 @@ publish = false
 
 [dependencies]
 nom = "6"
+num = "0.3"
