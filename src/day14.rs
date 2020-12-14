@@ -22,22 +22,22 @@ enum Command {
     Mem { address: u64, value: u64 },
 }
 
-fn mask_valid_from_bits(bits: &[MaskBit]) -> u64 {
+fn ignored_mask_from_bits(bits: &[MaskBit]) -> u64 {
     bits.iter().fold(0, |acc, bit| {
         (acc << 1)
             | match bit {
-                MaskBit::Ignored => 0,
-                MaskBit::Set0 | MaskBit::Set1 => 1,
+                MaskBit::Ignored => 1,
+                MaskBit::Set0 | MaskBit::Set1 => 0,
             }
     })
 }
 
-fn mask_set_from_bits(bits: &[MaskBit]) -> u64 {
+fn set1_mask_from_bits(bits: &[MaskBit]) -> u64 {
     bits.iter().fold(0, |acc, bit| {
         (acc << 1)
             | match bit {
-                MaskBit::Ignored | MaskBit::Set0 => 0,
                 MaskBit::Set1 => 1,
+                MaskBit::Ignored | MaskBit::Set0 => 0,
             }
     })
 }
@@ -70,23 +70,46 @@ pub fn run() {
         .unwrap()
         .1;
 
-    let mut mem = HashMap::new();
-    let mut mask_valid = 0;
-    let mut mask_set = 0;
+    let mut mem1 = HashMap::new();
+    let mut mem2 = HashMap::new();
+    let mut mask_ignored = 0;
+    let mut mask_set1 = 0;
     for cmd in commands.iter() {
         match cmd {
             Command::Mask { bits } => {
-                mask_valid = mask_valid_from_bits(bits);
-                mask_set = mask_set_from_bits(bits);
+                mask_ignored = ignored_mask_from_bits(bits);
+                mask_set1 = set1_mask_from_bits(bits);
             }
             Command::Mem { address, value } => {
-                let entry = mem.entry(address).or_insert(0);
-                *entry = (value & !mask_valid) | mask_set;
+                mem1.insert(address, (value & mask_ignored) | mask_set1);
+
+                let bit_count = mask_ignored.count_ones();
+                for i in 0..(1 << bit_count) {
+                    let mut mask_floating = 0;
+                    let mut counter_bit_index = 0;
+                    for mask_bit_index in 0..64 {
+                        let mask_bit = 1u64 << mask_bit_index;
+                        if (mask_ignored & mask_bit) != 0 {
+                            if i & (1 << counter_bit_index) != 0 {
+                                mask_floating |= mask_bit;
+                            }
+                            counter_bit_index += 1;
+                        }
+                    }
+                    mem2.insert(
+                        (address & !mask_ignored) | mask_floating | mask_set1,
+                        *value,
+                    );
+                }
             }
         }
     }
     println!(
         "day14: sum of memory values is {}",
-        mem.values().sum::<u64>()
+        mem1.values().sum::<u64>()
+    );
+    println!(
+        "day14: alt sum of memory values is {}",
+        mem2.values().sum::<u64>()
     );
 }
