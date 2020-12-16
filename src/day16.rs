@@ -12,14 +12,21 @@ struct Range {
 }
 
 impl Range {
-    fn is_valid(&self, n: usize) -> bool {
-        self.min <= n && n <= self.max
+    fn is_valid(&self, value: usize) -> bool {
+        self.min <= value && value <= self.max
     }
 }
 
 struct Field {
-    _name: String,
+    name: String,
     ranges: [Range; 2],
+    index_mask: usize,
+}
+
+impl Field {
+    fn is_valid(&self, value: usize) -> bool {
+        self.ranges[0].is_valid(value) || self.ranges[1].is_valid(value)
+    }
 }
 
 fn number(i: &str) -> IResult<&str, usize> {
@@ -42,8 +49,9 @@ fn field(i: &str) -> IResult<&str, Field> {
     Ok((
         i,
         Field {
-            _name: name.to_owned(),
+            name: name.to_owned(),
             ranges: [range0, range1],
+            index_mask: (1 << 20) - 1,
         },
     ))
 }
@@ -68,7 +76,7 @@ pub fn run() {
     if lines.next() != Some("your ticket:") {
         panic!("unexpected input");
     }
-    let _my_ticket = parse_ticket(lines.next().unwrap());
+    let my_ticket = parse_ticket(lines.next().unwrap());
 
     lines.next();
     if lines.next() != Some("nearby tickets:") {
@@ -76,16 +84,49 @@ pub fn run() {
     }
     let nearby_tickets: Vec<_> = lines.map(|s| parse_ticket(s)).collect();
 
+    let mut valid_tickets = Vec::new();
     let mut invalid_field_sum = 0;
     for ticket in nearby_tickets.iter() {
-        for n in ticket.iter().cloned() {
-            if !fields
-                .iter()
-                .any(|f| f.ranges[0].is_valid(n) || f.ranges[1].is_valid(n))
-            {
-                invalid_field_sum += n;
+        let mut ticket_is_valid = true;
+        for value in ticket.iter().cloned() {
+            if !fields.iter().any(|f| f.is_valid(value)) {
+                invalid_field_sum += value;
+                ticket_is_valid = false;
             }
+        }
+        if ticket_is_valid {
+            valid_tickets.push(ticket.clone());
         }
     }
     println!("day16: invalid field sum is {}", invalid_field_sum);
+
+    valid_tickets.push(my_ticket.clone());
+    for ticket in valid_tickets.iter() {
+        for (i, value) in ticket.iter().cloned().enumerate() {
+            for field in fields.iter_mut() {
+                if !field.is_valid(value) {
+                    field.index_mask &= !(1 << i);
+                }
+            }
+        }
+    }
+    let mut unknown_mask = (1 << 20) - 1;
+    while unknown_mask != 0 {
+        for field in fields.iter_mut() {
+            if field.index_mask.count_ones() == 1 {
+                unknown_mask &= !field.index_mask;
+            } else {
+                field.index_mask &= unknown_mask;
+            }
+        }
+    }
+
+    let mut departure_product = 1;
+    for field in fields.iter() {
+        if field.name.starts_with("departure") {
+            let index = field.index_mask.trailing_zeros();
+            departure_product *= my_ticket[index as usize];
+        }
+    }
+    println!("day16: departure product is {}", departure_product);
 }
