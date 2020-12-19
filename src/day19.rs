@@ -75,7 +75,9 @@ fn is_match(rules: &HashMap<u32, Rule>, s: &str) -> bool {
                 }
             }
         } else {
-            return state.remain.is_empty();
+            if state.remain.is_empty() {
+                return true;
+            }
         }
     }
     false
@@ -98,6 +100,13 @@ pub fn run() {
     let messages: Vec<_> = lines.collect();
     println!(
         "day19: number of matches is {}",
+        messages.iter().filter(|s| is_match(&rules, s)).count()
+    );
+
+    rules.insert(8, Rule::Tuples(vec![vec![42], vec![42, 8]]));
+    rules.insert(11, Rule::Tuples(vec![vec![42, 31], vec![42, 11, 31]]));
+    println!(
+        "day19: number of new matches is {}",
         messages.iter().filter(|s| is_match(&rules, s)).count()
     );
 }
