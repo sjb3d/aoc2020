@@ -91,4 +91,21 @@ pub fn run() {
             .filter(|i| !ingredient_allergen.contains_key(i))
             .count()
     );
+
+    let mut dangerous_ingredients: Vec<_> = all_ingredients
+        .iter()
+        .filter(|i| ingredient_allergen.contains_key(i))
+        .collect();
+    dangerous_ingredients.sort_by(|a, b| {
+        ingredient_allergen
+            .get(a)
+            .unwrap()
+            .0
+            .cmp(ingredient_allergen.get(b).unwrap().0)
+    });
+    let dangerous_ingredients: Vec<_> = dangerous_ingredients.iter().map(|i| i.0).collect();
+    println!(
+        "day21: dangerous ingredients: {}",
+        dangerous_ingredients.join(",")
+    );
 }
