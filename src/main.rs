@@ -21,7 +21,7 @@ mod day20;
 mod day21;
 mod day22;
 
-pub fn main2() {
+pub fn main() {
     day01::run();
     day02::run();
     day03::run();
